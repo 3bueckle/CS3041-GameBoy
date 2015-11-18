@@ -22,6 +22,8 @@ import com.github.pedrovgs.androidgameboyemulator.core.mmu.MMU;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class KeypadTest extends UnitTest {
 
@@ -166,12 +168,14 @@ public class KeypadTest extends UnitTest {
     assertEquals(8, mmu.readByte(KEYPAD_ADDRESS) & 0x8);
   }
 
-  @Test public void shouldEnableAllTheBitsRelatedToTheKeypad() {
+  @Test public void shouldEnableBitsRelatedToTheCorrectKeys() {
     Keypad keypad = givenAKeypad();
     pressAllKeysDown(keypad);
 
     keypad.keyUp(Key.DOWN);
     keypad.keyUp(Key.RIGHT);
+    keypad.keyUp(Key.START);
+    keypad.keyUp(Key.A);
 
     assertEquals(8, mmu.readByte(KEYPAD_ADDRESS) & 0x8);
     assertEquals(1, mmu.readByte(KEYPAD_ADDRESS) & 0x1);
@@ -193,24 +197,6 @@ public class KeypadTest extends UnitTest {
     assertEquals(0x0, mmu.readByte(KEYPAD_ADDRESS) & 0x20);
   }
 
-  @Test public void shouldDisableFirstColumnIfAFirstColumnKeyIsUp() {
-    Keypad keypad = givenAKeypad();
-
-    keypad.keyDown(Key.A);
-    keypad.keyUp(Key.A);
-
-    assertEquals(0x10, mmu.readByte(KEYPAD_ADDRESS) & 0x10);
-  }
-
-  @Test public void shouldDisableSecondColumnIfAFirstColumnKeyIsUp() {
-    Keypad keypad = givenAKeypad();
-
-    keypad.keyDown(Key.LEFT);
-    keypad.keyUp(Key.LEFT);
-
-    assertEquals(0x20, mmu.readByte(KEYPAD_ADDRESS) & 0x20);
-  }
-
   @Test public void shouldSupportMoreThanOneKeyPressedInDifferentColumns() {
     Keypad keypad = givenAKeypad();
 
@@ -227,7 +213,39 @@ public class KeypadTest extends UnitTest {
 
     pressAllKeyDownAndUp(keypad);
 
-    assertEquals(0x3F, mmu.readByte(KEYPAD_ADDRESS) & 0xFF);
+    assertEquals(0xF, mmu.readByte(KEYPAD_ADDRESS) & 0xFF);
+  }
+
+  @Test public void shouldReturnTrueIfFirstColumnIsEnabled() {
+    Keypad keypad = givenAKeypad();
+
+    mmu.writeByte(KEYPAD_ADDRESS, (byte) 0x0);
+
+    assertTrue(keypad.isFirstColumnEnabled());
+  }
+
+  @Test public void shouldReturnFalseIfFirstColumnIsDisabled() {
+    Keypad keypad = givenAKeypad();
+
+    mmu.writeByte(KEYPAD_ADDRESS, (byte) 0x10);
+
+    assertFalse(keypad.isFirstColumnEnabled());
+  }
+
+  @Test public void shouldReturnTrueIfSecondColumnIsEnabled() {
+    Keypad keypad = givenAKeypad();
+
+    mmu.writeByte(KEYPAD_ADDRESS, (byte) 0x0);
+
+    assertTrue(keypad.isSecondColumnEnabled());
+  }
+
+  @Test public void shouldReturnFalseIfSecondColumnIsDisabled() {
+    Keypad keypad = givenAKeypad();
+
+    mmu.writeByte(KEYPAD_ADDRESS, (byte) 0x20);
+
+    assertFalse(keypad.isSecondColumnEnabled());
   }
 
   private void pressAllKeysDown(Keypad keypad) {
